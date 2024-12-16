@@ -7,7 +7,7 @@
 #define CAMERA HERO4
 
 const char *ssid = "JOAO__.2.4 G";
-const char *password = "";
+const char *password = "159683247";
 
 const char *GOPRO_SSID = "bmwixespm";
 const char *GOPRO_PASS = "goprohero4";
@@ -17,8 +17,10 @@ ESP8266WebServer server(80);
 
 const int SERVO_PIN = D1;
 
-const int MOTOR_CC_PIN1 = D2;
-const int MOTOR_CC_PIN2 = D3;
+const int MOTOR_CC_PIN1 = D6;
+const int MOTOR_CC_PIN2 = D7;
+
+const int LED = D0;
 
 Servo steeringServo;
 
@@ -26,20 +28,32 @@ int currentAngle = 90;
 
 const int ANGLE_INCREMENT = 5;
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   gp.enableDebug(&Serial);
 
+  digitalWrite(LED, HIGH);
+  pinMode(MOTOR_CC_PIN1, OUTPUT);
+  pinMode(MOTOR_CC_PIN2, OUTPUT);
   steeringServo.attach(SERVO_PIN);
-  steeringServo.write(currentAngle);
+
+  // Centraliza o servo no início com movimentos rápidos
+  for (int angle = currentAngle; angle != 90; ) {
+    if (currentAngle > 90) {
+      angle = max(90, angle - 10); // Movendo para o centro em passos maiores
+    } else {
+      angle = min(90, angle + 10); // Movendo para o centro em passos maiores
+    }
+    steeringServo.write(angle);
+    delay(30); // Aumenta a velocidade
+  }
+  currentAngle = 90;
 
   pinMode(MOTOR_CC_PIN1, OUTPUT);
   pinMode(MOTOR_CC_PIN2, OUTPUT);
 
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Conectando ao WiFi...");
   }
@@ -269,9 +283,8 @@ void handleMove()
   }
 }
 
-void moveForward(int speed)
-{
-  analogWrite(MOTOR_CC_PIN1, speed);
+void moveForward(int speed) {
+  analogWrite(MOTOR_CC_PIN1, constrain(speed, 0, 1023));
   digitalWrite(MOTOR_CC_PIN2, LOW);
 }
 
@@ -281,23 +294,22 @@ void moveBackward(int speed)
   analogWrite(MOTOR_CC_PIN2, speed);
 }
 
-void turnLeft()
-{
-  if (currentAngle > 45)
-  {
-    currentAngle -= ANGLE_INCREMENT;
+void turnLeft() {
+  if (currentAngle > 45) {
+    currentAngle -= 10; // Incremento maior para mais velocidade
     steeringServo.write(currentAngle);
+    Serial.println("Turning left, angle: " + String(currentAngle));
   }
 }
 
-void turnRight()
-{
-  if (currentAngle < 135)
-  {
-    currentAngle += ANGLE_INCREMENT;
+void turnRight() {
+  if (currentAngle < 135) {
+    currentAngle += 10; // Incremento maior para mais velocidade
     steeringServo.write(currentAngle);
+    Serial.println("Turning right, angle: " + String(currentAngle));
   }
 }
+
 
 void centerSteering()
 {

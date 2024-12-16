@@ -58,7 +58,7 @@ def move_car(command: CommandCreate):
     db.refresh(db_command)
     db.close()
     
-    nodemcu_url = "http://192.168.100.33/move" 
+    nodemcu_url = "http://192.168.100.55/move" 
     try:
         response = requests.post(nodemcu_url, json={"direction": command.direction, "speed": command.speed})
         if response.status_code == 200:
