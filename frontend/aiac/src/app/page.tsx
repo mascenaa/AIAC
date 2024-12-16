@@ -1,20 +1,46 @@
+"use client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import Image from "next/image";
-import { JSX, SVGProps } from "react";
-
+import { useState, useEffect, useRef } from "react"
+import ReactPlayer from 'react-player'
+import { Switch } from "@/components/ui/switch";
+import Spline from "@splinetool/react-spline";
+import videojs from 'video.js';
+import 'video.js/dist/video-js.css';
+import Hls from 'hls.js';
 
 export default function Home() {
+  const component = useRef<{ page?: string } | null>(null);
+  const [isLoaded, setIsLoaded] = useState<Boolean>(false);
+  const temperature = 100;
+
+  function onLoad(spline: any) {
+    const obj = spline.findObjectByName('Cube 7');
+    component.current = obj;
+    setIsLoaded(true);
+  }
+
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (videoElement && Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource("http://10.5.5.9/live/amba.m3u8");
+      hls.attachMedia(videoElement);
+    }
+  }, []);
+
   return (
     <main className=" bg-white">
       <div className="grid grid-cols-1  md:grid-cols-[300px_1fr] gap-6">
         <Card className="bg-background p-6 shadow-lg">
           <CardHeader>
-            <CardTitle>BMW IX Control</CardTitle>
+            <CardTitle>AIAC Control</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
@@ -34,7 +60,7 @@ export default function Home() {
                     <span>AIAC</span>
                   </li>
                   <li className="mt-2">
-                    Condução: <span className="font-bold">Automatico</span>
+                    Condução: <span className="font-bold">Manual</span>
                   </li>
                 </ul>
               </div>
@@ -50,27 +76,24 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <Checkbox id="alert-motion" />
                 <Label htmlFor="alert-motion">
-                  Ronco do Motor
+                  ?
                 </Label>
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox id="alert-sound" />
                 <Label htmlFor="alert-sound">
-                  Alerta de Som
+                  ?
                 </Label>
               </div>
             </div>
             <div className="grid gap-2">
               <div className="font-medium">Ações</div>
-              <div className="flex gap-2">
-                <Button variant="outline">Manual</Button>
-                <Button>Automatico</Button>
+              <div className="flex items-center gap-2">
+                <Switch id="turn" />
+                <Label>
+                  Ligar
+                </Label>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="bg-red-700 text-red-200 font-bold">Desligar</Button>
-                <Button className="bg-green-500 font-bold">Ligar</Button>
-              </div>
-
             </div>
           </CardContent>
         </Card>
@@ -80,14 +103,23 @@ export default function Home() {
               <CardTitle>Camera 1</CardTitle>
             </CardHeader>
             <CardContent>
-              <img src="/placeholder.svg" alt="Camera 1 Feed" className="w-full h-auto rounded-md" />
+              <video
+                ref={videoRef}
+                controls
+                className="video-js vjs-default-skin vjs-big-play-centered"
+              />
             </CardContent>
           </Card>
           <Card className="bg-background p-6 shadow-lg">
             <CardHeader>
               <CardTitle>Frame</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="">
+              <div className="h-[35rem]">
+                <Spline
+                  scene="https://prod.spline.design/rysOIUrUqgTKz-TC/scene.splinecode"
+                  onLoad={onLoad} />
+              </div>
 
             </CardContent>
           </Card>
@@ -156,44 +188,3 @@ export default function Home() {
   );
 }
 
-
-function ChevronLeftIcon(props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) {
-  return (
-    // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  )
-}
-
-
-function ChevronRightIcon(props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) {
-  return (
-    // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  )
-}

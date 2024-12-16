@@ -1,4 +1,8 @@
-from fastapi import FastAPI, HTTPException
+import socket
+import subprocess
+from time import sleep
+from urllib.request import urlopen
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -48,6 +52,46 @@ class SensorDataCreate(BaseModel):
     current_position: str
     battery_status: str
     lights_on: bool
+
+def get_command_msg(id):
+    return "_GPHD_:%u:%u:%d:%1lf\n" % (0, 0, 2, 0)
+
+GOPRO_IP = "10.5.5.9"
+UDP_PORT = 8554
+KEEP_ALIVE_PERIOD = 2500
+KEEP_ALIVE_CMD = 2
+
+def start_gopro_stream():
+    MESSAGE = get_command_msg(KEEP_ALIVE_CMD)
+    urlopen(f"http://{GOPRO_IP}:8080/live/amba.m3u8").read()
+
+    loglevel_verbose = "-loglevel panic"
+    subprocess.Popen(
+        f"ffplay {loglevel_verbose} -fflags nobuffer -f:v mpegts -probesize 8192 udp://{GOPRO_IP}:{UDP_PORT}",
+        shell=True,
+    )
+
+    while True:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(bytes(MESSAGE, "utf-8"), (GOPRO_IP, UDP_PORT))
+        sleep(KEEP_ALIVE_PERIOD / 1000)
+
+@app.get("/start-stream/")
+def start_stream(background_tasks: BackgroundTasks):
+    try:
+        background_tasks.add_task(start_gopro_stream)
+        return {"status": "success", "message": "Transmissão iniciada"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao iniciar a transmissão: {e}")
+
+@app.get("/stop-stream/")
+def stop_stream():
+    try:
+        subprocess.run(["pkill", "-f", "ffplay"], check=True)
+        return {"status": "success", "message": "Transmissão interrompida"}
+    except subprocess.CalledProcessError:
+        raise HTTPException(status_code=500, detail="Erro ao interromper a transmissão")
+
 
 @app.post("/move/")
 def move_car(command: CommandCreate):
